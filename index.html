@@ -1,0 +1,883 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Ledger — AI Tax Platform (Prototype)</title>
+<style>
+/* ---------- design tokens ---------- */
+:root{
+  --bg:#f4f6f8; --panel:#ffffff; --ink:#111b26; --ink-soft:#4a5b6b; --ink-faint:#8496a6;
+  --line:#e2e8ee; --line-strong:#cbd6df;
+  --teal:#0f6b6b; --teal-ink:#0a4d4d; --teal-wash:#e7f1f1;
+  --blue:#1f6feb; --blue-wash:#e8f0fe;
+  --amber:#a86400; --amber-wash:#fbf1dc;
+  --red:#b0271f; --red-wash:#fbe9e7;
+  --green:#1f7a44; --green-wash:#e6f3ec;
+  --violet:#6b3fa0; --violet-wash:#f0e9fa;
+  --radius:10px; --shadow:0 1px 2px rgba(16,32,48,.06),0 4px 16px rgba(16,32,48,.05);
+  --mono:'SF Mono',ui-monospace,'Cascadia Code',Menlo,Consolas,monospace;
+  --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.45;-webkit-font-smoothing:antialiased}
+button{font-family:inherit;font-size:inherit;cursor:pointer}
+h1,h2,h3,h4{margin:0;font-weight:640;letter-spacing:-.01em}
+a{color:var(--blue);text-decoration:none}
+
+/* ---------- app shell ---------- */
+.app{display:grid;grid-template-rows:auto 1fr;height:100vh}
+.topbar{display:flex;align-items:center;gap:16px;padding:0 18px;height:54px;background:var(--panel);border-bottom:1px solid var(--line);z-index:20}
+.brand{display:flex;align-items:center;gap:9px;font-weight:720;letter-spacing:-.02em;font-size:16px}
+.brand .mark{width:24px;height:24px;border-radius:6px;background:linear-gradient(135deg,var(--teal),#12a19a);display:grid;place-items:center;color:#fff;font-size:13px;font-weight:800}
+.topnav{display:flex;gap:2px;margin-left:8px}
+.topnav button{border:0;background:transparent;color:var(--ink-soft);padding:7px 12px;border-radius:7px;font-weight:560}
+.topnav button:hover{background:var(--bg)}
+.topnav button.active{background:var(--teal-wash);color:var(--teal-ink)}
+.spacer{flex:1}
+.rolepick{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--ink-soft)}
+.rolepick select{font-family:inherit;font-size:13px;padding:5px 8px;border:1px solid var(--line-strong);border-radius:7px;background:var(--panel);color:var(--ink)}
+.who{display:flex;align-items:center;gap:8px}
+.avatar{width:30px;height:30px;border-radius:50%;background:var(--violet-wash);color:var(--violet);display:grid;place-items:center;font-weight:700;font-size:12px}
+
+.main{overflow:auto}
+.wrap{max-width:1200px;margin:0 auto;padding:22px 20px 60px}
+
+/* ---------- generic bits ---------- */
+.muted{color:var(--ink-soft)}
+.faint{color:var(--ink-faint)}
+.mono{font-family:var(--mono)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+.pagehead{display:flex;align-items:flex-end;gap:14px;margin-bottom:16px}
+.pagehead h1{font-size:22px}
+.pagehead p{margin:2px 0 0;color:var(--ink-soft)}
+.pill{display:inline-flex;align-items:center;gap:5px;padding:2px 9px;border-radius:999px;font-size:11.5px;font-weight:640;line-height:1.6;white-space:nowrap}
+.dot{width:7px;height:7px;border-radius:50%;display:inline-block}
+.kbd{font-family:var(--mono);font-size:11px;background:var(--bg);border:1px solid var(--line-strong);border-bottom-width:2px;border-radius:5px;padding:1px 5px;color:var(--ink-soft)}
+
+/* ---------- dashboard ---------- */
+.dashgrid{display:grid;grid-template-columns:1fr 320px;gap:18px;align-items:start}
+@media(max-width:940px){.dashgrid{grid-template-columns:1fr}}
+.statrow{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}
+.stat{padding:13px 15px}
+.stat .statTop{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.stat .n{font-size:26px;font-weight:720;letter-spacing:-.02em}
+.stat .l{font-size:12px;color:var(--ink-soft);margin-top:2px}
+.stat.warn .n{color:var(--red)}
+.stat.go .n{color:var(--teal-ink)}
+.stat .delta{font-size:11px;font-weight:720;padding:1px 6px;border-radius:999px;background:var(--bg);color:var(--ink-faint);white-space:nowrap}
+.stat .delta.bad{background:var(--red-wash);color:var(--red)}
+.stat .delta.good{background:var(--green-wash);color:var(--green)}
+.stat .ctx{font-size:11.5px;color:var(--ink-faint);margin-top:8px;border-top:1px solid var(--line);padding-top:7px}
+
+.queuehead{display:flex;align-items:center;gap:10px;margin:2px 4px 10px}
+.queuehead h2{font-size:15px}
+.filters{display:flex;gap:6px;margin-left:auto;flex-wrap:wrap}
+.chip{border:1px solid var(--line-strong);background:var(--panel);color:var(--ink-soft);padding:4px 10px;border-radius:999px;font-size:12px;font-weight:560}
+.chip.on{background:var(--teal-ink);border-color:var(--teal-ink);color:#fff}
+
+.qcard{padding:0;overflow:hidden}
+.qrow{display:grid;grid-template-columns:auto 1fr auto;gap:14px;align-items:center;padding:10px 16px;border-bottom:1px solid var(--line);cursor:pointer;transition:background .08s}
+.qrow:last-child{border-bottom:0}
+.qrow:hover{background:#fafcfd}
+.qrow.norank{grid-template-columns:1fr auto}  /* changed: list view has no ranking, so no rank column */
+.rank{width:26px;height:26px;border-radius:7px;background:var(--bg);color:var(--ink-faint);display:grid;place-items:center;font-weight:720;font-size:12px}
+.qrow.p0 .rank{background:var(--red-wash);color:var(--red)}
+.qrow.p1 .rank{background:var(--amber-wash);color:var(--amber)}
+.qmid .name{font-weight:640}
+.qmid .sub{font-size:12.5px;color:var(--ink-soft);margin-top:1px}
+.reasons{display:flex;gap:6px;margin-top:5px;flex-wrap:wrap}
+.qright{text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+.due{font-size:12.5px;font-weight:600}
+.due.over{color:var(--red)}.due.soon{color:var(--amber)}
+.goto{border:1px solid var(--line-strong);background:var(--panel);border-radius:7px;padding:5px 11px;font-weight:600;color:var(--teal-ink)}
+.goto:hover{background:var(--teal-wash);border-color:var(--teal)}
+.qmore{padding:11px 16px;text-align:center;font-size:12.5px;color:var(--ink-soft);cursor:pointer;background:#fafcfd}
+.qmore:hover{background:var(--teal-wash);color:var(--teal-ink)}
+.qmore b{color:var(--teal-ink)}
+
+.toolbar{display:flex;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap}
+.search{flex:1;min-width:220px;padding:9px 13px;border:1px solid var(--line-strong);border-radius:9px;background:var(--panel);font-size:14px;color:var(--ink)}
+.search:focus{outline:none;border-color:var(--teal);box-shadow:0 0 0 3px var(--teal-wash)}
+.listcount{font-size:12.5px;color:var(--ink-soft);margin:0 2px 10px}
+.pager{display:flex;align-items:center;justify-content:center;gap:14px;margin-top:16px}
+.pager .btn[disabled]{opacity:.45;cursor:not-allowed}
+
+.side h3{font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-faint);margin:0 0 8px 2px}
+.side .card{padding:14px;margin-bottom:16px}
+.aibox{border:1px solid var(--teal);background:linear-gradient(180deg,var(--teal-wash),#fff 60%)}
+.aibox .hd{display:flex;align-items:center;gap:8px;font-weight:680;color:var(--teal-ink);margin-bottom:8px}
+.aibox p{margin:0 0 10px;color:var(--ink-soft);font-size:13px}
+.aibox .row{display:flex;gap:8px;align-items:baseline;padding:6px 0;border-top:1px dashed var(--line-strong);font-size:13px}
+.miniq{font-size:13px}
+.miniq .l{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--line)}
+.miniq .l:last-child{border-bottom:0}
+
+/* ---------- return review (traceability + affordances) ---------- */
+.review{display:grid;grid-template-columns:minmax(0,1fr) minmax(430px,560px);gap:18px;align-items:start}
+@media(max-width:1040px){.review{grid-template-columns:1fr}}
+.crumbs{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--ink-soft);margin-bottom:12px}
+.crumbs a{color:var(--ink-soft);font-weight:560}
+.crumbs a:hover{color:var(--teal-ink)}
+.crumbs .sep{color:var(--ink-faint)}
+
+.rethead{display:flex;align-items:flex-start;gap:14px;margin-bottom:14px}
+.rethead h1{font-size:20px}
+.rethead .meta{color:var(--ink-soft);font-size:13px;margin-top:3px}
+.rethead .right{margin-left:auto;text-align:right}
+.progress{display:flex;gap:4px;margin-top:8px}
+.pstep{flex:1;height:6px;border-radius:3px;background:var(--line)}
+.pstep.done{background:var(--teal)}
+.pstep.now{background:var(--amber)}
+
+.grouphd{display:flex;align-items:center;gap:8px;margin:16px 2px 6px;font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-faint);font-weight:700}
+.grouphd .sum{margin-left:auto;font-family:var(--mono);color:var(--ink-soft);text-transform:none;letter-spacing:0;font-weight:600}
+
+.fields{padding:2px 0}
+.frow{display:grid;grid-template-columns:1fr auto auto;gap:12px;align-items:center;padding:10px 14px;border-bottom:1px solid var(--line);cursor:pointer}
+.frow:last-child{border-bottom:0}
+.frow:hover{background:#fafcfd}
+.frow:focus-visible{outline:2px solid var(--teal);outline-offset:-2px}  /* changed: rows are keyboard-reachable now */
+.frow.sel{background:var(--teal-wash);box-shadow:inset 3px 0 0 var(--teal)}
+.flabel{display:flex;flex-direction:column;gap:2px;min-width:0}
+.flabel .ln{font-weight:560}
+.flabel .ln .line{font-family:var(--mono);font-size:11.5px;color:var(--ink-faint);margin-right:6px}
+.fval{font-family:var(--mono);font-weight:640;text-align:right;white-space:nowrap}
+.fval.neg{color:var(--red)}
+
+/* field-state styling: each state gets a color + tag treatment on its value */
+.state{--c:var(--ink-faint);--w:var(--bg)}
+.state.ai{--c:var(--violet);--w:var(--violet-wash)}
+.state.verified{--c:var(--green);--w:var(--green-wash)}
+.state.editable{--c:var(--blue);--w:var(--blue-wash)}
+.state.approval{--c:var(--amber);--w:var(--amber-wash)}
+.state.locked{--c:var(--ink-soft);--w:var(--bg)}
+.stag{display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:680;color:var(--c);background:var(--w);border:1px solid color-mix(in srgb,var(--c) 30%,transparent);white-space:nowrap}
+.state.editable .fval{border-bottom:1.5px dashed var(--blue)}
+.state.ai .fval{color:var(--violet-ink,#4d2d78)}
+.state.locked .fval{color:var(--ink-soft)}
+.ico{display:inline-block;vertical-align:-2px;flex:none}
+.stag .ico{vertical-align:-2px}
+
+/* right rail: source panel */
+.srcpanel{position:sticky;top:14px}
+.srcpanel .hd{display:flex;align-items:center;gap:10px;padding:13px 16px;border-bottom:1px solid var(--line)}
+.srcpanel .hd h3{font-size:14px}
+.srcpanel .bd{padding:16px}
+.empty{padding:48px 24px;text-align:center;color:var(--ink-faint)}
+.empty .big{font-size:34px;margin-bottom:8px}
+
+.trace{display:flex;flex-direction:column;gap:0}
+.tstep{display:grid;grid-template-columns:26px 1fr;gap:12px;padding-bottom:16px;position:relative}
+.tstep:not(:last-child)::before{content:"";position:absolute;left:12.5px;top:26px;bottom:0;width:2px;background:var(--line)}
+.tnum{width:26px;height:26px;border-radius:50%;background:var(--teal-wash);color:var(--teal-ink);display:grid;place-items:center;font-weight:720;font-size:12px;z-index:1}
+.tbody .th{font-weight:640;font-size:13px}
+.tbody .tsub{color:var(--ink-soft);font-size:12.5px;margin-top:1px}
+.calcbox{font-family:var(--mono);font-size:12.5px;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:9px 11px;margin-top:7px;line-height:1.7}
+.calcbox .op{color:var(--ink-faint)}
+.calcbox .res{color:var(--teal-ink);font-weight:700}
+
+/* fake source document */
+.doc{margin-top:9px;border:1px solid var(--line-strong);border-radius:8px;overflow:hidden;background:#fff}
+.doc .dbar{display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--bg);border-bottom:1px solid var(--line);font-size:12px;color:var(--ink-soft)}
+.doc .dbar .fn{font-weight:640;color:var(--ink)}
+.doc .page{position:relative;padding:14px;font-size:11px;color:#333}
+.w2{border:2px solid #222;border-radius:3px}
+.w2 .w2hd{display:flex;justify-content:space-between;padding:6px 8px;border-bottom:1.5px solid #222;font-weight:700;font-size:11px}
+.w2 .grid{display:grid;grid-template-columns:1fr 1fr;gap:0}
+.w2 .cell{border:.5px solid #999;padding:5px 7px;min-height:38px}
+.w2 .cell .cap{font-size:8.5px;color:#666;text-transform:uppercase;letter-spacing:.03em}
+.w2 .cell .amt{font-family:var(--mono);font-weight:700;font-size:12px;margin-top:2px}
+.hlbox{position:relative}
+.hl{outline:2px solid var(--amber);background:color-mix(in srgb,var(--amber) 14%,transparent);border-radius:3px}
+.hltag{position:absolute;top:-9px;right:-6px;background:var(--amber);color:#fff;font-size:9px;font-weight:800;padding:1px 6px;border-radius:999px;letter-spacing:.03em}
+
+.conf{display:flex;align-items:center;gap:9px;margin-top:14px;padding-top:13px;border-top:1px solid var(--line)}
+.confbar{flex:1;height:7px;border-radius:4px;background:var(--line);overflow:hidden}
+.confbar > i{display:block;height:100%;border-radius:4px}
+.acts{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+.btn{border:1px solid var(--line-strong);background:var(--panel);border-radius:8px;padding:8px 13px;font-weight:620;color:var(--ink)}
+.btn:hover{background:var(--bg)}
+.btn.primary{background:var(--teal);border-color:var(--teal);color:#fff}
+.btn.primary:hover{background:var(--teal-ink)}
+.btn.ghost{border-color:transparent;color:var(--ink-soft)}
+
+/* legend / affordance reference */
+.legend{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.lcard{padding:13px 15px}
+.lcard .top{display:flex;align-items:center;gap:9px;margin-bottom:6px}
+.lcard p{margin:0;color:var(--ink-soft);font-size:12.5px}
+.lcard .ex{margin-top:9px;font-family:var(--mono);font-size:12.5px}
+
+.note{background:var(--blue-wash);border:1px solid color-mix(in srgb,var(--blue) 25%,transparent);color:#1b3a63;border-radius:9px;padding:11px 14px;font-size:12.5px;margin-bottom:16px;display:flex;gap:9px}
+.note b{color:#123}
+
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;padding:10px 16px;border-radius:9px;font-size:13px;font-weight:560;box-shadow:0 8px 30px rgba(0,0,0,.25);opacity:0;pointer-events:none;transition:.22s;z-index:60}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.hide{display:none!important}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <div class="brand"><span class="mark">L</span>Ledger</div>
+    <nav class="topnav" id="topnav">
+      <button data-view="dashboard" class="active">Dashboard</button>
+      <button data-view="returns">Returns</button>
+      <button data-view="legend">Interaction system</button>
+      <button data-view="about">About this submission</button>
+    </nav>
+    <div class="spacer"></div>
+    <div class="rolepick">
+      <span>Viewing as</span>
+      <select id="role">
+        <option value="preparer">Priya — Tax Preparer</option>
+        <option value="manager">Marcus — Review Manager</option>
+      </select>
+    </div>
+    <div class="who"><span class="avatar" id="avatar">PR</span></div>
+  </header>
+
+  <div class="main"><div class="wrap" id="wrap"></div></div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+/*
+   Ledger — return-review prototype.
+   No backend: returns, documents and the "AI" extraction are all mock data,
+   so the client-side logic (ranking, traceability, field states) is the real part.
+*/
+
+// SVG icon set (Feather-style, single stroke) — inherits currentColor so tags/buttons tint it
+const ICONS = {
+  sparkle:{p:'<path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/>',fill:1},
+  check:'<polyline points="20 6 9 17 4 12"/>',
+  pencil:'<path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/>',
+  clock:'<circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/>',
+  lock:'<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
+  arrow:'<line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>',
+  file:'<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><polyline points="14 3 14 8 19 8"/>',
+  play:{p:'<polygon points="6 4 20 12 6 20 6 4"/>',fill:1},
+  search:'<circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>',
+  inbox:'<path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.5 5.5 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.5-6.5A2 2 0 0 0 16.7 4H7.3a2 2 0 0 0-1.8 1.5z"/>',
+  reopen:'<polyline points="1 4 1 10 7 10"/><path d="M3.5 15a9 9 0 1 0 2.1-9.4L1 10"/>',
+};
+function icon(name,size){
+  const i=ICONS[name]; if(!i) return '';
+  const p=i.p||i, s=size||14;
+  return `<svg class="ico" width="${s}" height="${s}" viewBox="0 0 24 24" fill="${i.fill?'currentColor':'none'}" stroke="${i.fill?'none':'currentColor'}" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
+}
+
+// one field-state vocabulary, reused on every screen so a value always says what you can do with it
+const STATES = {
+  ai:       {tag:'AI extracted', icon:'sparkle', desc:'Pulled from a source document by the model. Not yet checked by a human.'},
+  verified: {tag:'Verified',     icon:'check', desc:'A preparer confirmed this value against its source. Trusted.'},
+  editable: {tag:'Editable',     icon:'pencil', desc:'You can change this directly. Client- or preparer-entered.'},
+  approval: {tag:'Needs approval', icon:'clock', desc:'Changed value waiting on a manager sign-off before it locks.'},
+  locked:   {tag:'Locked',       icon:'lock', desc:'Filed or system-calculated. Read-only, with the reason on hover.'},
+};
+function stateTag(s){const d=STATES[s];return `<span class="stag">${icon(d.icon)} ${d.tag}</span>`}
+
+/* ---------- mock source documents ---------- */
+const DOCS = {
+  w2_acme: {name:'W-2 — Acme Corp (2025).pdf', kind:'w2', page:1, employer:'Acme Corporation',
+    box:{'1':84250.00,'2':13120.00,'17':4180.00}},
+  int_1099: {name:'1099-INT — First National (2025).pdf', kind:'plain', page:1,
+    lines:[['Box 1 — Interest income','1,204.55'],['Box 4 — Fed tax withheld','0.00']]},
+  brok_1099: {name:'1099-B — Vanguard (2025).pdf', kind:'plain', page:3,
+    lines:[['Proceeds (ST)','18,900.00'],['Cost basis (ST)','16,240.00'],['Realized gain','2,660.00']]},
+  don: {name:'Charitable receipts (bundle).pdf', kind:'plain', page:2,
+    lines:[['Habitat for Humanity','2,500.00'],['Public radio','300.00'],['Goodwill (non-cash)','1,900.00']]},
+};
+
+/* ---------- returns (07 dashboard drives off these) ---------- */
+// fields carry the traceability chain + affordance state; dashboard reads status/urgency
+const RETURNS = [
+  {id:'R-1042', client:'Nguyen, Linh', type:'1040', stage:3, stageLabel:'In review',
+   due:'2026-08-06', assignee:'Priya', owner:'preparer', refund:3820, blocking:'Client hasn’t answered 2 questions',
+   reasons:[['red','Due tomorrow'],['amber','2 open client questions'],['blue','AI flagged a mismatch']],
+   fields:{
+     income:[
+       {line:'1a', label:'Wages, salaries, tips', val:84250, state:'verified', conf:.99,
+        src:'w2_acme', where:'Box 1', calc:[['W-2 Box 1','84,250.00']], note:'Single employer, exact match.'},
+       {line:'2b', label:'Taxable interest', val:1205, state:'ai', conf:.94,
+        src:'int_1099', where:'Box 1', calc:[['1099-INT Box 1','1,204.55'],['round to dollar','1,205']]},
+       {line:'7',  label:'Capital gain (short-term)', val:2660, state:'approval', conf:.88,
+        src:'brok_1099', where:'Page 3', calc:[['Proceeds','18,900.00'],['− Cost basis','16,240.00'],['= Gain','2,660.00']],
+        note:'Preparer edited basis; manager sign-off pending.'},
+     ],
+     deductions:[
+       {line:'12', label:'Itemized — charitable', val:4700, state:'ai', conf:.71,
+        src:'don', where:'Page 2 (3 receipts)', calc:[['Habitat','2,500.00'],['Public radio','300.00'],['Goodwill (non-cash)','1,900.00'],['= Total','4,700.00']],
+        note:'Low confidence: one receipt is a photo, non-cash item may need Form 8283.'},
+       {line:'12b', label:'State & local tax (SALT)', val:10000, state:'locked', conf:1,
+        src:'w2_acme', where:'Box 17 + est. payments', calc:[['State tax withheld','4,180.00'],['Property tax','8,900.00'],['Sum','13,080.00'],['SALT cap','10,000.00']],
+        note:'Locked: capped by statute at $10,000.'},
+     ],
+     credits:[
+       {line:'19', label:'Child tax credit', val:2000, state:'editable', conf:.9,
+        src:null, where:'Questionnaire — 1 dependent', calc:[['Qualifying children ×1','2,000.00']],
+        note:'Editable pending dependent SSN confirmation.'},
+     ],
+   }},
+  {id:'R-1039', client:'Okafor, Emeka', type:'1120-S', stage:2, stageLabel:'Preparing',
+   due:'2026-08-12', assignee:'Priya', owner:'preparer', refund:-1450, blocking:'Missing Q4 bank statement',
+   reasons:[['amber','Due in 7 days'],['red','1 document missing'],['blue','8 AI-extracted fields to review']],
+   fields:{income:[
+     {line:'1a', label:'Gross receipts', val:412900, state:'ai', conf:.82, src:null, where:'QuickBooks export',
+      calc:[['Sum of 12 monthly deposits','412,900.00']], note:'Q4 statement not yet uploaded — total may change.'},
+   ],deductions:[
+     {line:'8', label:'Salaries & wages', val:96000, state:'verified', conf:.97, src:null, where:'Payroll register',
+      calc:[['4 employees','96,000.00']]},
+   ],credits:[]}},
+  {id:'R-1051', client:'Barros, Sofia', type:'1040', stage:4, stageLabel:'Ready to file',
+   due:'2026-08-20', assignee:'Priya', owner:'preparer', refund:610, blocking:null,
+   reasons:[['green','All items cleared'],['green','Client e-signed']],
+   fields:{income:[
+     {line:'1a', label:'Wages', val:58200, state:'verified', conf:.99, src:'w2_acme', where:'Box 1',
+      calc:[['W-2 Box 1','58,200.00']]},
+   ],deductions:[
+     {line:'12', label:'Standard deduction', val:14600, state:'locked', conf:1, src:null, where:'Filing status: single',
+      calc:[['2025 standard deduction','14,600.00']], note:'Locked: statutory amount.'},
+   ],credits:[]}},
+  {id:'R-1028', client:'Whitfield Holdings LLC', type:'1065', stage:1, stageLabel:'Intake',
+   due:'2026-09-15', assignee:'Priya', owner:'preparer', refund:0, blocking:'Waiting on client documents',
+   reasons:[['amber','Intake incomplete'],['blue','0 of 14 documents received']],
+   fields:{income:[],deductions:[],credits:[]}},
+];
+
+// manager sees a fuller queue including other preparers' work needing sign-off
+const MANAGER_EXTRA = [
+  {id:'R-1044', client:'Delgado, Rosa', type:'1040', stage:3, stageLabel:'Needs approval',
+   due:'2026-08-07', assignee:'Devon', owner:'manager', refund:5200, blocking:'2 edits awaiting your sign-off',
+   reasons:[['red','Your approval blocks filing'],['amber','Due in 2 days']],
+   fields:{income:[
+     {line:'7', label:'Capital gain', val:9100, state:'approval', conf:.86, src:'brok_1099', where:'Page 3',
+      calc:[['Proceeds','61,000.00'],['− Basis','51,900.00'],['= Gain','9,100.00']],
+      note:'Preparer overrode AI basis. Awaiting manager approval.'},
+   ],deductions:[],credits:[]}},
+];
+
+/* ---------- generate a larger book of business so search + ranking get tested at real volume ---------- */
+// seeded PRNG so the book of business is stable across reloads (no Math.random churn)
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+const GENERATED = (function(){
+  const rnd=mulberry32(20260805);
+  const pick=a=>a[Math.floor(rnd()*a.length)];
+  const first=['Linh','Emeka','Sofia','James','Aisha','Wei','Diego','Nora','Omar','Grace','Hiro','Priyanka','Tom','Renee','Ivan','Yuki','Carlos','Fatima','Sean','Mei','Andre','Zoe','Raj','Nina','Paul','Lucia','Ken','Amara','Gustavo','Elena'];
+  const last=['Nguyen','Okafor','Barros','Whitfield','Kaur','Zhang','Alvarez','Bennett','Haddad','Kim','Tanaka','Sharma','Reilly','Dubois','Petrov','Sato','Mendez','Rahman','Murphy','Chen','Laurent','Boyd','Patel','Kowalski','Osei','Rossi','Yamada','Diallo','Silva','Novak'];
+  const co=['Apex Logistics LLC','Cedar & Vine Co.','Northgate Dental PC','Bluewater Marine LLC','Summit Roofing Inc','Harbor Point Cafe LLC','Redwood Analytics','Ironclad Fabrication','Meridian Consulting','Palmetto Realty Group'];
+  const employers=['Acme Corporation','Northwind Trading','Globex Systems','Initech LLC','Umbra Health','Stark Industrial','Wayne & Co','Hooli Inc','Vandelay Imports','Soylent Foods'];
+  const banks=['First National','Chase','Citizens Bank','Ally','Capital One','PNC','Truist'];
+  const filings=[['single',14600],['married filing jointly',29200],['head of household',21900]];
+  const fmt2=n=>n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+  const stages=[[1,'Intake'],[2,'Preparing'],[3,'In review'],[4,'Ready to file']];
+  const types=['1040','1040','1040','1120-S','1065','1120','990'];
+  const blockers=['Missing prior-year return','Client hasn’t answered a question','Awaiting bank statement','K-1 not yet received','Signature pending',null,null,null];
+  const out=[];
+  for(let i=0;i<204;i++){
+    const [stage,stageLabel]=pick(stages);
+    const type=pick(types);
+    const biz=type!=='1040';
+    const client=biz?pick(co):(pick(last)+', '+pick(first));
+    const dueOff=Math.floor(rnd()*86)-2;            // -2 .. +83 days from "today"
+    const due=addDays('2026-08-05',dueOff);
+    const blocking=stage===4?null:pick(blockers);
+    const refund=Math.round((rnd()*9000-2500)/10)*10;
+    const reasons=[];
+    if(dueOff<0) reasons.push(['red',(-dueOff)+'d overdue']);
+    else if(dueOff<=3) reasons.push(['amber','Due soon']);
+    if(blocking) reasons.push(['red',blocking]);
+    if(stage===2) reasons.push(['blue',(2+Math.floor(rnd()*9))+' AI fields to review']);
+    if(stage===4&&!blocking) reasons.push(['green','All items cleared']);
+    if(!reasons.length) reasons.push(['blue','On track']);
+    // per-return varied values, with a source document generated to match (so every trace is unique)
+    let fields;
+    if(stage===1){ fields={income:[],deductions:[],credits:[]}; }
+    else if(biz){
+      const gr=Math.round((80000+rnd()*1200000)/100)*100;
+      const sal=Math.round((40000+rnd()*380000)/100)*100;
+      fields={
+        income:[{line:'1a',label:'Gross receipts',val:gr,state:'ai',conf:.80+rnd()*.12,src:null,where:'QuickBooks export (12 months)',
+          calc:[['Sum of monthly deposits',fmt2(gr)]],note:'Extracted from accounting export — verify against bank statements.'}],
+        deductions:[{line:'8',label:'Salaries & wages',val:sal,state:'verified',conf:.95+rnd()*.04,src:null,where:'Payroll register',
+          calc:[['Payroll total',fmt2(sal)]]}],
+        credits:[]};
+    } else {
+      const w=Math.round((42000+rnd()*106000)/50)*50;
+      const intr=Math.round((150+rnd()*3600)/5)*5;
+      const fedWH=Math.round(w*.155/10)*10, stWH=Math.round(w*.05/10)*10;
+      const emp=pick(employers), bank=pick(banks), [stName,stVal]=pick(filings);
+      fields={
+        income:[
+          {line:'1a',label:'Wages, salaries, tips',val:w,state:'verified',conf:.96+rnd()*.03,where:'Box 1',
+           doc:{name:'W-2 — '+emp+' (2025).pdf',kind:'w2',page:1,employer:emp,box:{'1':w,'2':fedWH,'17':stWH}},
+           calc:[['W-2 Box 1',fmt2(w)]]},
+          {line:'2b',label:'Taxable interest',val:intr,state:'ai',conf:.86+rnd()*.1,where:'Box 1',
+           doc:{name:'1099-INT — '+bank+' (2025).pdf',kind:'plain',page:1,lines:[['Box 1 — Interest income',fmt2(intr)],['Box 4 — Fed tax withheld','0.00']]},
+           calc:[['1099-INT Box 1',fmt2(intr)]]},
+        ],
+        deductions:[
+          {line:'12',label:'Standard deduction',val:stVal,state:'locked',conf:1,src:null,where:'Filing status: '+stName,
+           calc:[['2025 standard deduction',fmt2(stVal)]],note:'Locked: statutory amount for '+stName+'.'},
+        ],credits:[]};
+    }
+    out.push({id:'R-'+(1100+i), client, type, stage, stageLabel, due, assignee:'Priya', owner:'preparer',
+      refund, blocking, reasons:reasons.slice(0,3), fields});
+  }
+  return out;
+})();
+function addDays(iso,n){const[y,m,d]=iso.split('-').map(Number);const dt=new Date(y,m-1,d+n);const p=x=>String(x).padStart(2,'0');return dt.getFullYear()+'-'+p(dt.getMonth()+1)+'-'+p(dt.getDate())}
+
+/* ---------- app state ---------- */
+let state={view:'dashboard', role:'preparer', returnId:null, selField:null, filter:'all', search:'', statusFilter:'all', page:1};
+const $=(s,r=document)=>r.querySelector(s);
+const wrap=$('#wrap');
+
+function currentReturns(){
+  const base=RETURNS.concat(GENERATED);
+  if(state.role==='manager') return MANAGER_EXTRA.concat(base);
+  return base;
+}
+function getReturn(id){return currentReturns().find(r=>r.id===id)}
+
+/* ---------- queue ranking: deadline + blockers + decisions owed ---------- */
+// real ranking against the mock data: overdue + blocking + approval-owed float to top
+function priorityScore(r){
+  const days=daysUntil(r.due);
+  let s=0;
+  if(days<0) s+=100; else if(days<=1) s+=70; else if(days<=3) s+=45; else if(days<=7) s+=25;
+  if(r.blocking) s+=20;
+  if(hasState(r,'approval') && state.role==='manager') s+=60; // manager: sign-offs I'm blocking
+  if(hasState(r,'approval') && state.role==='preparer') s+=15;
+  if(r.stage===4 && !r.blocking) s-=30;                        // ready-to-file needs little attention
+  r.reasons.forEach(([tone])=>{if(tone==='red')s+=15;else if(tone==='amber')s+=6});
+  return s;
+}
+function rankedQueue(){
+  let list=currentReturns().map(r=>({r,score:priorityScore(r)}));
+  if(state.filter==='due')      list=list.filter(x=>daysUntil(x.r.due)<=3);
+  if(state.filter==='blocked')  list=list.filter(x=>x.r.blocking);
+  if(state.filter==='approval') list=list.filter(x=>hasState(x.r,'approval'));
+  return list.sort((a,b)=>b.score-a.score);
+}
+function hasState(r,s){return Object.values(r.fields).some(g=>g.some(f=>f.state===s))}
+function daysUntil(d){const [y,m,day]=d.split('-').map(Number);const t=new Date(2026,7,5);const x=new Date(y,m-1,day);return Math.round((x-t)/86400000)}
+function dueLabel(d){const n=daysUntil(d);if(n<0)return {t:`${-n}d overdue`,c:'over'};if(n===0)return{t:'Due today',c:'over'};if(n===1)return{t:'Due tomorrow',c:'soon'};if(n<=7)return{t:`Due in ${n}d`,c:'soon'};return{t:new Date(2026,d.split('-')[1]-1,d.split('-')[2]).toLocaleDateString('en-US',{month:'short',day:'numeric'}),c:''}}
+function money(n){const s=Math.abs(n).toLocaleString('en-US',{minimumFractionDigits:0});return (n<0?'−$':'$')+s}
+
+/* ---------- render dispatch ---------- */
+function render(){
+  $('#avatar').textContent = state.role==='manager'?'MR':'PR';
+  document.querySelectorAll('#topnav button').forEach(b=>b.classList.toggle('active',b.dataset.view===state.view && !(state.view==='returns'&&state.returnId)));
+  if(state.view==='dashboard') return renderDashboard();
+  if(state.view==='returns' && state.returnId) return renderReview();
+  if(state.view==='returns') return renderReturnsList();
+  if(state.view==='legend') return renderLegend();
+  if(state.view==='about') return renderAbout();
+}
+
+/* ---------- submission landing: one link covers all three deliverables ---------- */
+// EDIT THIS after recording: paste your walkthrough video URL (Loom / YouTube / Drive)
+const VIDEO_URL='';
+function renderAbout(){
+  const vid = VIDEO_URL
+    ? `<a class="btn primary" href="${VIDEO_URL}" target="_blank" rel="noopener">${icon('play')} Watch the 2-min walkthrough</a>`
+    : `<span class="btn" style="opacity:.7;cursor:default">${icon('play')} Walkthrough video — add your link in <span class="mono">VIDEO_URL</span></span>`;
+  wrap.innerHTML=`
+  <div class="pagehead"><div><h1>About this submission</h1><p>AI Engineer case study · challenges 01, 07, 08 · built as a clickable prototype.</p></div></div>
+  <div class="review" style="grid-template-columns:minmax(0,1fr) 320px">
+    <div>
+      <div class="card" style="padding:18px 20px;margin-bottom:16px">
+        <h3 style="font-size:15px;margin-bottom:10px">The three challenges</h3>
+        <div class="miniq" style="font-size:13.5px">
+          <div class="l"><span><b>01 · Source traceability</b><div class="muted" style="font-size:12.5px">Every number traces to its document, box/page, and calculation.</div></span><a class="mono" data-goto="R-1042" style="cursor:pointer">Open example →</a></div>
+          <div class="l"><span><b>07 · Actionable dashboard</b><div class="muted" style="font-size:12.5px">A queue ranked by what to work on now, holding at 200+ returns.</div></span><a class="mono" data-nav2="dashboard" style="cursor:pointer">View →</a></div>
+          <div class="l"><span><b>08 · Interaction system</b><div class="muted" style="font-size:12.5px">One affordance language: AI / verified / editable / approval / locked.</div></span><a class="mono" data-nav2="legend" style="cursor:pointer">View →</a></div>
+        </div>
+      </div>
+
+      <div class="card" style="padding:18px 20px;margin-bottom:16px">
+        <h3 style="font-size:15px;margin-bottom:8px">What's real vs. simulated</h3>
+        <p class="muted" style="font-size:13px;margin:0 0 8px">Per the brief, the frontend is real and everything behind it is faked.</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;font-size:13px">
+          <div><div class="stag state verified" style="margin-bottom:6px">${icon('check')} Real</div>
+            <ul style="margin:0;padding-left:18px;color:var(--ink-soft);line-height:1.7">
+              <li>Prioritization ranking &amp; filters</li><li>Role-aware queue</li>
+              <li>Search / pagination over ~208 returns</li><li>Traceability drill-down</li>
+              <li>Affordance system + state changes</li></ul></div>
+          <div><div class="stag state ai" style="margin-bottom:6px">${icon('sparkle')} Simulated</div>
+            <ul style="margin:0;padding-left:18px;color:var(--ink-soft);line-height:1.7">
+              <li>All returns, clients, documents</li><li>AI extraction &amp; confidence scores</li>
+              <li>No auth (role = a toggle)</li><li>Edit/flag show a toast, no backend</li>
+              <li>"Today" pinned to 2026-08-05</li></ul></div>
+        </div>
+      </div>
+    </div>
+
+    <aside>
+      <div class="card aibox" style="padding:16px">
+        <div class="hd">${icon('play')} Walkthrough</div>
+        <p style="font-size:13px">A 2-minute narrated tour of the decisions behind each screen.</p>
+        <div style="display:flex;flex-direction:column;gap:8px">${vid}</div>
+      </div>
+      <div class="card" style="padding:14px 16px;margin-top:16px;font-size:12.5px;color:var(--ink-soft)">
+        <b style="color:var(--ink)">Built by Akhil</b><br>Single-file prototype · vanilla JS · no dependencies.<br>Deployed on Vercel.
+      </div>
+    </aside>
+  </div>`;
+  wrap.querySelectorAll('[data-goto]').forEach(a=>a.addEventListener('click',()=>openReturn(a.dataset.goto)));
+  wrap.querySelectorAll('[data-nav2]').forEach(a=>a.addEventListener('click',()=>{state.view=a.dataset.nav2;state.returnId=null;render();window.scrollTo(0,0)}));
+}
+
+/* ---------- dashboard (07) ---------- */
+function renderDashboard(){
+  const q=rankedQueue();
+  const all=currentReturns();
+  const overdue=all.filter(r=>daysUntil(r.due)<0||daysUntil(r.due)===0).length;
+  const blocked=all.filter(r=>r.blocking).length;
+  const approvals=all.filter(r=>hasState(r,'approval')).length;
+  const ready=all.filter(r=>r.stage===4&&!r.blocking).length;
+
+  const isMgr=state.role==='manager';
+  wrap.innerHTML=`
+    <div class="pagehead">
+      <div>
+        <h1>${isMgr?'Good morning, Marcus':'Good morning, Priya'}</h1>
+        <p>${isMgr?'Your team has '+all.length+' active returns. Here’s what needs a decision from you.':'You own '+all.length+' returns. Start at the top — it’s ranked by what matters most today.'}</p>
+      </div>
+    </div>
+
+    <div class="dashgrid">
+      <div>
+        <div class="statrow">
+          ${statCard(overdue,'Due today / overdue',overdue?'warn':'','▲ 2','bad',`${Math.min(3,overdue)} due within 4 hours`)}
+          ${statCard(blocked,'Blocked',blocked?'warn':'','▼ 3','good',`${new Set(all.filter(r=>r.blocking).map(r=>r.client)).size} clients waiting`)}
+          ${statCard(approvals,isMgr?'Awaiting your sign-off':'Pending approval','','—','',approvals?'oldest waiting 3 days':'all clear')}
+          ${statCard(ready,'Ready to file','go','▲ 4','good','can be filed today')}
+        </div>
+
+        <div class="queuehead">
+          <h2>Work queue</h2>
+          <div class="filters" id="filters">
+            ${['all|Everything','due|Due soon','blocked|Blocked','approval|Approvals'].map(f=>{const[v,l]=f.split('|');return `<button class="chip ${state.filter===v?'on':''}" data-f="${v}">${l}</button>`}).join('')}
+          </div>
+        </div>
+
+        <div class="card qcard">
+          ${q.length?q.slice(0,8).map((x,i)=>qrow(x.r,i)).join(''):`<div class="empty"><div class="big">${icon('check',36)}</div>Nothing matches this filter. Clear it to see everything.</div>`}
+          ${q.length>8?`<div class="qmore" data-allreturns>Showing your top 8 of <b>${q.length}</b> matching returns · <b>View all →</b></div>`:''}
+        </div>
+      </div>
+
+      <aside class="side">
+        <h3>AI stand-up</h3>
+        <div class="card aibox">
+          <div class="hd">${icon('sparkle')} What I’d look at first</div>
+          <p>I ranked your queue by deadline, what’s blocking a return, and where a human decision is owed. Fabricated for the demo — but the ranking is real logic over the mock data.</p>
+          ${q.slice(0,2).map(x=>`<div class="row">${icon('arrow')}<div><b>${x.r.client}</b> — ${topReason(x.r)}</div></div>`).join('')}
+        </div>
+
+        <h3>This week</h3>
+        <div class="card">
+          <div class="miniq">
+            <div class="l"><span class="muted">Returns filed</span><b>7</b></div>
+            <div class="l"><span class="muted">Avg. review time</span><b>2.4 hrs</b></div>
+            <div class="l"><span class="muted">AI fields accepted</span><b>91%</b></div>
+            <div class="l"><span class="muted">Client questions open</span><b>${isMgr?'11':'4'}</b></div>
+          </div>
+        </div>
+      </aside>
+    </div>`;
+
+  $('#filters').addEventListener('click',e=>{const b=e.target.closest('[data-f]');if(!b)return;state.filter=b.dataset.f;renderDashboard()});
+  const more=wrap.querySelector('[data-allreturns]');
+  if(more) more.addEventListener('click',()=>{state.view='returns';state.returnId=null;render();window.scrollTo(0,0)});
+  wrap.querySelectorAll('[data-open]').forEach(el=>el.addEventListener('click',()=>openReturn(el.dataset.open)));
+}
+function topReason(r){return r.reasons[0]?r.reasons[0][1]:'Ready'}
+// the due label already carries timing, so drop timing chips to avoid showing it twice
+const timingRe=/overdue|due (soon|today|tomorrow|in )/i;
+function statCard(n,label,cls,delta,dcls,ctx){
+  return `<div class="card stat ${cls}">
+    <div class="statTop"><div class="n">${n}</div>${delta&&delta!=='—'?`<span class="delta ${dcls}">${delta}</span>`:''}</div>
+    <div class="l">${label}</div>
+    <div class="ctx">${ctx}</div>
+  </div>`;
+}
+// i = rank position, or null in the un-ranked list view
+function qrow(r,i){
+  const d=dueLabel(r.due);
+  // changed: tint follows the return's own urgency, not its position — row 1 of an all-clear
+  // filter was showing a red badge, and the list view never tinted at all
+  const p=d.c==='over'?'p0':d.c==='soon'?'p1':'';
+  return `<div class="qrow ${p} ${i==null?'norank':''}" data-open="${r.id}">
+    ${i==null?'':`<div class="rank">${i+1}</div>`}
+    <div class="qmid">
+      <div class="name">${r.client} <span class="faint mono" style="font-size:12px">· ${r.type} · ${r.id}</span></div>
+      <div class="sub">${r.stageLabel}${r.blocking?' — '+r.blocking:''}</div>
+      <div class="reasons">${r.reasons.filter(([,l])=>!timingRe.test(l)).map(([t,l])=>`<span class="pill" style="background:var(--${t}-wash);color:var(--${t})"><span class="dot" style="background:var(--${t})"></span>${l}</span>`).join('')}</div>
+    </div>
+    <div class="qright">
+      <span class="due ${d.c}">${d.t}</span>
+      <button class="goto">Open →</button>
+    </div>
+  </div>`;
+}
+
+/* ---------- returns list: search, status filter, pagination ---------- */
+const PER_PAGE=25;
+function renderReturnsList(){
+  const all=currentReturns();
+  const q=state.search.trim().toLowerCase();
+  const statuses=[['all','All'],['1','Intake'],['2','Preparing'],['3','In review'],['4','Ready to file']];
+  let list=all.filter(r=>{
+    if(state.statusFilter!=='all' && String(r.stage)!==state.statusFilter) return false;
+    if(!q) return true;
+    return (r.client+' '+r.id+' '+r.type).toLowerCase().includes(q);
+  });
+  const pages=Math.max(1,Math.ceil(list.length/PER_PAGE));
+  if(state.page>pages) state.page=1;
+  const start=(state.page-1)*PER_PAGE;
+  const slice=list.slice(start,start+PER_PAGE);
+
+  wrap.innerHTML=`
+    <div class="pagehead"><div><h1>All returns</h1><p>${all.length} returns in your book of business.</p></div></div>
+    <div class="toolbar">
+      <input id="search" class="search" aria-label="Search returns by client, ID, or type" placeholder="Search client, ID, or type…" value="${state.search.replace(/"/g,'&quot;')}" autocomplete="off">
+      <div class="filters">${statuses.map(([v,l])=>`<button class="chip ${state.statusFilter===v?'on':''}" data-s="${v}">${l}</button>`).join('')}</div>
+    </div>
+    <div class="listcount">${list.length?`Showing <b>${start+1}–${Math.min(start+PER_PAGE,list.length)}</b> of <b>${list.length}</b>${q||state.statusFilter!=='all'?' matching':''}`:'No returns match.'}</div>
+    <div class="card qcard">${slice.length?slice.map(r=>qrow(r,null)).join(''):`<div class="empty"><div class="big">${icon('search',36)}</div>Nothing found. Try a different search.</div>`}</div>
+    ${pages>1?`<div class="pager">
+      <button class="btn" data-pg="prev" ${state.page===1?'disabled':''}>← Prev</button>
+      <span class="muted">Page ${state.page} of ${pages}</span>
+      <button class="btn" data-pg="next" ${state.page===pages?'disabled':''}>Next →</button>
+    </div>`:''}`;
+
+  const s=$('#search');
+  s.addEventListener('input',()=>{state.search=s.value;state.page=1;const pos=s.selectionStart;renderReturnsList();const ns=$('#search');ns.focus();ns.setSelectionRange(pos,pos)});
+  wrap.querySelectorAll('[data-s]').forEach(b=>b.addEventListener('click',()=>{state.statusFilter=b.dataset.s;state.page=1;renderReturnsList()}));
+  wrap.querySelectorAll('[data-pg]').forEach(b=>b.addEventListener('click',()=>{if(b.disabled)return;state.page+=b.dataset.pg==='next'?1:-1;renderReturnsList();window.scrollTo(0,0)}));
+  wrap.querySelectorAll('[data-open]').forEach(el=>el.addEventListener('click',()=>openReturn(el.dataset.open)));
+}
+
+/* ---------- return review: traceability (01) + affordances (08) ---------- */
+function openReturn(id){state.view='returns';state.returnId=id;state.selField=null;render();window.scrollTo(0,0)}
+function renderReview(){
+  const r=getReturn(state.returnId);
+  const groups=[['income','Income'],['deductions','Deductions & adjustments'],['credits','Credits']];
+  wrap.innerHTML=`
+    <div class="crumbs">
+      <a data-nav="dashboard">Dashboard</a><span class="sep">/</span>
+      <a data-nav="returns">Returns</a><span class="sep">/</span>
+      <span>${r.client} · ${r.id}</span>
+    </div>
+
+    <div class="rethead">
+      <div>
+        <h1>${r.client}</h1>
+        <div class="meta">${r.type} · Tax year 2025 · Assigned to ${r.assignee}</div>
+      </div>
+      <div class="right">
+        <div class="mono" style="font-size:18px;font-weight:720;color:${r.refund>=0?'var(--teal-ink)':'var(--red)'}">${money(r.refund)}</div>
+        <div class="faint" style="font-size:12px">${r.refund>=0?'estimated refund':'balance due'}</div>
+        <div class="progress" title="Stage ${r.stage} of 4">
+          ${[1,2,3,4].map(s=>`<span class="pstep ${s<r.stage?'done':s===r.stage?'now':''}"></span>`).join('')}
+        </div>
+      </div>
+    </div>
+
+    <div class="note">${icon('sparkle')}<div><b>Every value below traces to a source.</b> Click any line to see the document it came from, the exact box or page, and the math applied. Colors and tags show what you can change and what you can’t.</div></div>
+
+    <div class="review">
+      <div class="card" style="padding:6px 4px 10px">
+        ${groups.map(([k,label])=>{
+          const fs=r.fields[k]||[];
+          if(!fs.length) return '';
+          const sum=fs.reduce((a,f)=>a+(f.val||0),0);
+          return `<div class="grouphd">${label}<span class="sum">${money(sum)}</span></div>
+          <div class="fields">${fs.map(f=>frow(f,k)).join('')}</div>`;
+        }).join('') || `<div class="empty"><div class="big">${icon('inbox',36)}</div>This return is still in intake — no fields extracted yet.</div>`}
+      </div>
+
+      <div class="card srcpanel" id="srcpanel">${sourceEmpty()}</div>
+    </div>`;
+
+  wrap.querySelectorAll('[data-nav]').forEach(a=>a.addEventListener('click',()=>{state.returnId=null;state.view=a.dataset.nav;render();window.scrollTo(0,0)}));
+  wrap.querySelectorAll('[data-field]').forEach(el=>{
+    el.addEventListener('click',()=>selectField(el.dataset.group,+el.dataset.field));
+    // changed: keyboard parity with the click handler above
+    el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();el.click()}});
+  });
+}
+function frow(f,group){
+  const idx=(getReturn(state.returnId).fields[group]).indexOf(f);
+  const sel=state.selField && state.selField.g===group && state.selField.i===idx;
+  // changed: tabindex/role so the core traceability interaction works without a mouse
+  return `<div class="frow state ${f.state} ${sel?'sel':''}" data-field="${idx}" data-group="${group}"
+    tabindex="0" role="button" aria-label="Trace ${f.label}, ${money(f.val)}, ${STATES[f.state].tag}">
+    <div class="flabel"><span class="ln"><span class="line">${f.line}</span>${f.label}</span></div>
+    <div>${stateTag(f.state)}</div>
+    <div class="fval ${f.val<0?'neg':''}">${money(f.val)}</div>
+  </div>`;
+}
+function sourceEmpty(){return `<div class="empty"><div class="big">${icon('sparkle',36)}</div><div style="font-size:14px;font-weight:600;color:var(--ink-soft)">Select a line to trace it</div><p class="faint" style="max-width:240px;margin:6px auto 0">Every number connects back to a document, a page, and the calculation used to get here.</p></div>`}
+
+function selectField(g,i){
+  state.selField={g,i};
+  // re-highlight rows
+  wrap.querySelectorAll('.frow').forEach(el=>el.classList.toggle('sel', el.dataset.group===g && +el.dataset.field===i));
+  const f=getReturn(state.returnId).fields[g][i];
+  $('#srcpanel').innerHTML=sourcePanel(f);
+  $('#srcpanel').querySelectorAll('[data-act]').forEach(b=>b.addEventListener('click',()=>fieldAction(b.dataset.act,f)));
+}
+
+/* build the trace: field → value → document → page/box → calculation */
+function sourcePanel(f){
+  const d=f.doc||(f.src?DOCS[f.src]:null);
+  const confPct=Math.round(f.conf*100);
+  const confColor=f.conf>=.9?'var(--green)':f.conf>=.75?'var(--amber)':'var(--red)';
+  return `
+    <div class="hd">
+      <h3>Trace: ${f.label}</h3>
+      <span style="margin-left:auto">${stateTag(f.state)}</span>
+    </div>
+    <div class="bd">
+      <div class="trace">
+        <div class="tstep"><div class="tnum">1</div><div class="tbody">
+          <div class="th">Value on the return</div>
+          <div class="tsub">Line ${f.line} · <span class="mono" style="font-weight:700">${money(f.val)}</span></div>
+        </div></div>
+
+        <div class="tstep"><div class="tnum">2</div><div class="tbody">
+          <div class="th">Source</div>
+          <div class="tsub">${d?d.name:f.where}</div>
+          ${d?docView(d,f):`<div class="calcbox" style="margin-top:7px">${f.where}</div>`}
+        </div></div>
+
+        <div class="tstep"><div class="tnum">3</div><div class="tbody">
+          <div class="th">Location</div>
+          <div class="tsub">${f.where}</div>
+        </div></div>
+
+        <div class="tstep" style="padding-bottom:4px"><div class="tnum">4</div><div class="tbody">
+          <div class="th">Calculation applied</div>
+          <div class="calcbox">${calcRows(f.calc)}</div>
+        </div></div>
+      </div>
+
+      ${f.note?`<div class="note" style="margin:14px 0 0">${icon(STATES[f.state].icon)}<div>${f.note}</div></div>`:''}
+
+      <div class="conf">
+        <span class="faint" style="font-size:12px">AI confidence</span>
+        <div class="confbar"><i style="width:${confPct}%;background:${confColor}"></i></div>
+        <b class="mono" style="color:${confColor}">${confPct}%</b>
+      </div>
+
+      ${actionsFor(f)}
+    </div>`;
+}
+function calcRows(rows){
+  return rows.map((r,i)=>{
+    const [l,v]=r; const last=i===rows.length-1;
+    return `<div><span class="${last?'res':'op'}">${l}</span> <span style="float:right" class="${last?'res':''}">${v}</span></div>`;
+  }).join('');
+}
+function docView(d,f){
+  if(d.kind==='w2'){
+    const boxNum=(f.where.match(/Box (\d+)/)||[])[1];
+    const cells=[['1','Wages, tips, other comp.',d.box['1']],['2','Federal income tax withheld',d.box['2']],['17','State income tax',d.box['17']]];
+    return `<div class="doc"><div class="dbar">${icon('file')}<span class="fn">${d.name}</span><span style="margin-left:auto">p.${d.page}</span></div>
+      <div class="page"><div class="w2">
+        <div class="w2hd"><span>Form W-2 Wage and Tax Statement</span><span>2025</span></div>
+        <div style="padding:5px 8px;border-bottom:1px solid #999;font-size:10px">Employer: <b>${d.employer}</b></div>
+        <div class="grid">${cells.map(([n,cap,amt])=>{
+          const hit=n===boxNum;
+          return `<div class="cell ${hit?'hlbox':''}"><div class="${hit?'hl':''}" style="padding:${hit?'3px 5px':'0'}">
+            <div class="cap">Box ${n} — ${cap}</div><div class="amt">${amt.toLocaleString('en-US',{minimumFractionDigits:2})}</div>
+            ${hit?'<span class="hltag">SOURCE</span>':''}</div></div>`;
+        }).join('')}</div>
+      </div></div></div>`;
+  }
+  // generic document: highlight every line the calculation actually consumed, matched by amount.
+  // changed: was hardcoded to line 0, which tagged "Proceeds" as the source of a capital *gain*
+  // and tagged one of three charitable receipts as the source of their total.
+  const used=new Set((f.calc||[]).map(([,v])=>v));
+  const anyMatch=d.lines.some(ln=>used.has(ln[1]));
+  return `<div class="doc"><div class="dbar">${icon('file')}<span class="fn">${d.name}</span><span style="margin-left:auto">p.${d.page}</span></div>
+    <div class="page">${d.lines.map((ln,i)=>{
+      const hit=anyMatch?used.has(ln[1]):i===0; // fall back to line 0 if no amount lines up
+      return `<div class="hlbox" style="display:flex;justify-content:space-between;padding:4px 6px;${hit?'':'color:#888'}">
+        <span class="${hit?'hl':''}" style="padding:${hit?'2px 5px':'0'}">${ln[0]}${hit?'<span class="hltag">SOURCE</span>':''}</span>
+        <span class="mono" style="font-weight:${hit?700:500}">${ln[1]}</span></div>`;
+    }).join('')}</div></div>`;
+}
+
+/* affordance-driven actions (08): what you can DO depends on the state */
+function actionsFor(f){
+  const b=(label,act,cls='')=>`<button class="btn ${cls}" data-act="${act}">${label}</button>`;
+  const canApprove = state.role==='manager';
+  switch(f.state){
+    case 'ai':       return `<div class="acts">${b(icon('check')+' Verify','verify','primary')}${b(icon('pencil')+' Edit value','edit')}${b('Flag for later','flag','ghost')}</div>`;
+    case 'editable': return `<div class="acts">${b(icon('pencil')+' Edit value','edit','primary')}${b(icon('check')+' Mark verified','verify')}</div>`;
+    case 'approval': return `<div class="acts">${canApprove?b(icon('check')+' Approve','verify','primary'):b('Approval needed from manager','none')}${b('View change','flag','ghost')}</div>`;
+    case 'verified': return `<div class="acts">${b(icon('reopen')+' Reopen','edit')}${b('View history','flag','ghost')}</div>`;
+    case 'locked':   return `<div class="acts"><span class="btn" style="cursor:not-allowed;opacity:.6">${icon('lock')} Locked — ${f.note?f.note.replace(/^Locked:\s*/,''):'read-only'}</span></div>`;
+  }
+  return '';
+}
+function fieldAction(act,f){
+  const msg={verify:'Marked as verified',edit:'Opened inline editor (demo)',flag:'Flagged — added to your follow-ups',none:'Only a manager can approve this change'}[act];
+  toast(msg||'Done');
+  if(act==='verify' && f.state!=='verified'){ f.state='verified'; renderReview(); selectField(state.selField.g,state.selField.i); }
+}
+
+/* ---------- interaction system reference (08) ---------- */
+function renderLegend(){
+  wrap.innerHTML=`<div class="pagehead"><div><h1>The interaction system</h1><p>One visual language across every screen, so any value tells you what you can do with it — before you click.</p></div></div>
+  <div class="note">${icon('sparkle')}<div>The same five states drive the return review, the dashboard, and every value the platform shows — defined once and reused, so what a color means never drifts from one screen to the next.</div></div>
+  <div class="legend">
+    ${Object.entries(STATES).map(([k,d])=>`
+      <div class="card lcard state ${k}">
+        <div class="top">${stateTag(k)}</div>
+        <p>${d.desc}</p>
+        <div class="ex fval" style="text-align:left">e.g. <span>$4,700</span></div>
+      </div>`).join('')}
+  </div>
+  <div style="height:20px"></div>
+  <div class="pagehead"><div><h2 style="font-size:16px">How the states map to actions</h2><p>Affordance isn’t just color — the available buttons change with the state, and role gates the rest.</p></div></div>
+  <div class="card" style="padding:4px 0">
+    ${[['ai','Verify · Edit · Flag','Anyone on the file'],
+       ['editable','Edit · Mark verified','Preparer + manager'],
+       ['approval','Approve','Manager only — preparer sees “needs sign-off”'],
+       ['verified','Reopen · View history','Preparer + manager'],
+       ['locked','—','No one (statutory / filed)']].map(([s,acts,who])=>`
+      <div class="frow state ${s}" style="cursor:default;grid-template-columns:180px 1fr 1fr">
+        <div>${stateTag(s)}</div><div class="mono" style="font-size:12.5px">${acts}</div><div class="muted" style="font-size:12.5px">${who}</div>
+      </div>`).join('')}
+  </div>`;
+}
+
+/* ---------- misc ---------- */
+let toastT;
+function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),1900)}
+
+$('#topnav').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;state.view=b.dataset.view;state.returnId=null;render()});
+$('#role').addEventListener('change',e=>{state.role=e.target.value;state.returnId=null;state.view='dashboard';render()});
+
+render();
+
+/* ---------- tiny self-check: sanity-test the date math + priority ranking ---------- */
+console.assert(daysUntil('2026-08-06')===1,'daysUntil tomorrow should be 1');
+console.assert(daysUntil('2026-08-04')===-1,'daysUntil yesterday should be -1');
+console.assert(priorityScore(RETURNS[0])>priorityScore(RETURNS[2]),'overdue/blocked return should outrank ready-to-file');
+// the 1099-B trace should tag all three lines the gain is derived from, not just the first
+console.assert((docView(DOCS.brok_1099,RETURNS[0].fields.income[2]).match(/hltag/g)||[]).length===3,'capital-gain trace should highlight proceeds, basis and gain');
+console.assert((docView(DOCS.int_1099,RETURNS[0].fields.income[1]).match(/hltag/g)||[]).length===1,'interest trace should highlight only Box 1');
+console.log('%cLedger prototype: self-checks passed','color:#0f6b6b;font-weight:700');
+</script>
+</body>
+</html>
