@@ -210,6 +210,10 @@ a{color:var(--blue);text-decoration:none}
 .lcard p{margin:0;color:var(--ink-soft);font-size:12.5px}
 .lcard .ex{margin-top:9px;font-family:var(--mono);font-size:12.5px}
 
+/* about-tab decision list — brief asks for "decisions you'd want to explain" */
+.decs>div{padding:10px 0;border-top:1px solid var(--line);font-size:13.5px;line-height:1.62;color:var(--ink-soft)}
+.decs>div:first-child{border-top:0;padding-top:2px}
+.decs b{color:var(--ink)}
 .note{background:var(--blue-wash);border:1px solid color-mix(in srgb,var(--blue) 25%,transparent);color:#1b3a63;border-radius:9px;padding:11px 14px;font-size:12.5px;margin-bottom:16px;display:flex;gap:9px}
 .note b{color:#123}
 
@@ -513,6 +517,18 @@ function renderAbout(){
               <li>All returns, clients, documents</li><li>AI extraction &amp; confidence scores</li>
               <li>No auth (role = a toggle)</li><li>Edit/flag show a toast, no backend</li>
               <li>"Today" pinned to 2026-08-05</li></ul></div>
+        </div>
+      </div>
+
+      <div class="card" style="padding:18px 20px;margin-bottom:16px">
+        <h3 style="font-size:15px;margin-bottom:4px">Decisions worth explaining</h3>
+        <p class="muted" style="font-size:13px;margin:0 0 6px">The choices I'd defend in review, and why I made them.</p>
+        <div class="decs">
+          <div><b>One product, not three screens.</b> The challenges compose. A ranked dashboard drills into a return, and inside that return every field carries both its traceability chain and its affordance state. Building them separately would have hidden whether they actually fit together.</div>
+          <div><b>Traceability is a chain, not a link.</b> A "view source" link answers <i>where</i> a number came from but not <i>how it was derived</i> — and that second question is what decides whether a CPA re-does the work by hand. The four steps (value → document → location → calculation) exist so the arithmetic is visible, not just the answer.</div>
+          <div><b>Affordance is colour, tag and actions together.</b> Colour alone is ambiguous and fails outright for colour-blind users, so every state also carries an icon and a word — and it changes which buttons you get. Defined in one place so a colour can't come to mean two things on two screens.</div>
+          <div><b>Ranking has to be legible.</b> The queue never just says "priority: high". Each row lists the reasons behind its position, so the ordering can be argued with. If software sorts your day and won't say why, you re-sort it by hand and the feature was pointless.</div>
+          <div><b>No dependencies.</b> One file, no build step, no framework. A prototype's job is to be looked at, and I didn't want anything sitting between a reviewer and the idea.</div>
         </div>
       </div>
     </div>
