@@ -485,10 +485,13 @@ function render(){
 
 /* ---------- submission landing: one link covers all three deliverables ---------- */
 // EDIT THIS after recording: paste your walkthrough video URL (Loom / YouTube / Drive)
-const VIDEO_URL='';
+const VIDEO_URL='https://www.loom.com/share/f451edd6dd9c4edebcc643d0b38d390f';
+const VIDEO_PASSWORD='ledger';   // shown next to the link so a reviewer never has to chase it
 function renderAbout(){
   const vid = VIDEO_URL
-    ? `<a class="btn primary" href="${VIDEO_URL}" target="_blank" rel="noopener">${icon('play')} Watch the 2-min walkthrough</a>`
+    ? `<a class="btn primary" href="${VIDEO_URL}" target="_blank" rel="noopener">${icon('play')} Watch the walkthrough</a>`
+      + (VIDEO_PASSWORD ? `<div style="font-size:12.5px;color:var(--ink-soft);margin-top:4px">
+          Password: <b class="mono" style="color:var(--ink)">${VIDEO_PASSWORD}</b></div>` : '')
     : `<span class="btn" style="opacity:.7;cursor:default">${icon('play')} Walkthrough video — add your link in <span class="mono">VIDEO_URL</span></span>`;
   wrap.innerHTML=`
   <div class="pagehead"><div><h1>About this submission</h1><p>AI Engineer case study · challenges 01, 07, 08 · built as a clickable prototype.</p></div></div>
@@ -536,7 +539,7 @@ function renderAbout(){
     <aside>
       <div class="card aibox" style="padding:16px">
         <div class="hd">${icon('play')} Walkthrough</div>
-        <p style="font-size:13px">A 2-minute narrated tour of the decisions behind each screen.</p>
+        <p style="font-size:13px">A six-minute narrated tour of the decisions behind each screen.</p>
         <div style="display:flex;flex-direction:column;gap:8px">${vid}</div>
       </div>
       <div class="card" style="padding:14px 16px;margin-top:16px;font-size:12.5px;color:var(--ink-soft)">
