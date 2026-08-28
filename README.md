@@ -1,5 +1,7 @@
 # Ledger — AI Tax Platform (Prototype)
 
+[![Prototype checks](https://github.com/akhil15123/tax-platform-prototype/actions/workflows/ci.yml/badge.svg)](https://github.com/akhil15123/tax-platform-prototype/actions/workflows/ci.yml)
+
 **Live:** https://tax-platform-prototype-pi.vercel.app
 
 A clickable frontend prototype for the AI Engineer case study. Covers three challenges:
@@ -9,6 +11,8 @@ A clickable frontend prototype for the AI Engineer case study. Covers three chal
 - **08 — Clickable vs. Editable**: one consistent visual language for every field state (AI-extracted, verified, editable, needs-approval, locked).
 
 **Run it:** open `index.html` in any browser. No build, no server, no dependencies.
+
+**Important:** all taxpayer data is synthetic. This interface is a product-design prototype, not tax preparation software or tax advice.
 
 ---
 
