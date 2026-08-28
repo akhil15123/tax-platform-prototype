@@ -1,5 +1,13 @@
 # Ledger — AI Tax Platform (Prototype)
 
+
+<!-- portfolio-showcase:start -->
+<p align="center">
+  <img src="docs/showcase.svg" alt="Ledger · AI Tax Workbench synthetic product showcase" width="100%">
+</p>
+<p align="center"><sub><strong>Portfolio preview:</strong> all names, records, metrics, and scenarios shown above are synthetic. No real user or customer data is included.</sub></p>
+<!-- portfolio-showcase:end -->
+
 [![Prototype checks](https://github.com/akhil15123/tax-platform-prototype/actions/workflows/ci.yml/badge.svg)](https://github.com/akhil15123/tax-platform-prototype/actions/workflows/ci.yml)
 
 **Live:** https://tax-platform-prototype-pi.vercel.app
