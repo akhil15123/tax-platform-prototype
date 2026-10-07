@@ -220,6 +220,42 @@ a{color:var(--blue);text-decoration:none}
 .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;padding:10px 16px;border-radius:9px;font-size:13px;font-weight:560;box-shadow:0 8px 30px rgba(0,0,0,.25);opacity:0;pointer-events:none;transition:.22s;z-index:60}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 .hide{display:none!important}
+.about-grid{grid-template-columns:minmax(0,1fr) 320px}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px;font-size:13px}
+.frow.legend-row{cursor:default;grid-template-columns:180px 1fr 1fr}
+@media(max-width:1040px){.about-grid{grid-template-columns:1fr}}
+@media(max-width:760px){
+  .two-col{grid-template-columns:1fr}
+  .frow.legend-row{grid-template-columns:1fr;gap:4px}
+  .frow.legend-row > :last-child{grid-column:auto}
+}
+/* ---------- phones ---------- */
+@media(max-width:760px){
+  .app{height:auto;min-height:100vh;grid-template-columns:minmax(0,1fr)}
+  .topbar > *{min-width:0}
+  .main{overflow:visible}
+  .topbar{flex-wrap:wrap;height:auto;padding:10px 14px;gap:10px;position:sticky;top:0}
+  .topnav{order:3;width:100%;margin-left:0;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+  .topnav::-webkit-scrollbar{display:none}
+  .topnav button{flex:none;white-space:nowrap}
+  .rolepick > span{display:none}
+  .rolepick select{font-size:13px;max-width:170px}
+  .wrap{padding:16px 14px 48px}
+  .pagehead{flex-wrap:wrap}
+  .statrow{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .stat .n{font-size:22px}
+  .queuehead{flex-wrap:wrap}
+  .filters{margin-left:0;width:100%}
+  .qrow{grid-template-columns:auto minmax(0,1fr);gap:10px 12px;padding:12px 14px}
+  .qrow.norank{grid-template-columns:minmax(0,1fr)}
+  .qright{grid-column:2;flex-direction:row;justify-content:space-between;align-items:center;text-align:left}
+  .qrow.norank .qright{grid-column:1}
+  .rethead{flex-wrap:wrap}
+  .rethead .right{margin-left:0;text-align:left;width:100%}
+  .frow{grid-template-columns:minmax(0,1fr) auto;gap:6px 10px}
+  .frow > :last-child{grid-column:1 / -1;justify-self:start}
+  .srcpanel{position:static;scroll-margin-top:112px}
+}
 </style>
 </head>
 <body>
@@ -235,7 +271,7 @@ a{color:var(--blue);text-decoration:none}
     <div class="spacer"></div>
     <div class="rolepick">
       <span>Viewing as</span>
-      <select id="role">
+      <select id="role" aria-label="Viewing as">
         <option value="preparer">Priya — Tax Preparer</option>
         <option value="manager">Marcus — Review Manager</option>
       </select>
@@ -492,7 +528,7 @@ function renderAbout(){
     : `<span class="btn" style="opacity:.7;cursor:default">${icon('play')} Walkthrough video — add your link in <span class="mono">VIDEO_URL</span></span>`;
   wrap.innerHTML=`
   <div class="pagehead"><div><h1>About this submission</h1><p>AI Engineer case study · challenges 01, 07, 08 · built as a clickable prototype.</p></div></div>
-  <div class="review" style="grid-template-columns:minmax(0,1fr) 320px">
+  <div class="review about-grid">
     <div>
       <div class="card" style="padding:18px 20px;margin-bottom:16px">
         <h3 style="font-size:15px;margin-bottom:10px">The three challenges</h3>
@@ -506,7 +542,7 @@ function renderAbout(){
       <div class="card" style="padding:18px 20px;margin-bottom:16px">
         <h3 style="font-size:15px;margin-bottom:8px">What's real vs. simulated</h3>
         <p class="muted" style="font-size:13px;margin:0 0 8px">Per the brief, the frontend is real and everything behind it is faked.</p>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;font-size:13px">
+        <div class="two-col">
           <div><div class="stag state verified" style="margin-bottom:6px">${icon('check')} Real</div>
             <ul style="margin:0;padding-left:18px;color:var(--ink-soft);line-height:1.7">
               <li>Prioritization ranking &amp; filters</li><li>Role-aware queue</li>
@@ -724,7 +760,11 @@ function renderReview(){
 
   wrap.querySelectorAll('[data-nav]').forEach(a=>a.addEventListener('click',()=>{state.returnId=null;state.view=a.dataset.nav;render();window.scrollTo(0,0)}));
   wrap.querySelectorAll('[data-field]').forEach(el=>{
-    el.addEventListener('click',()=>selectField(el.dataset.group,+el.dataset.field));
+    el.addEventListener('click',()=>{
+      selectField(el.dataset.group,+el.dataset.field);
+      // Stacked layout: the trace renders below the field list, so bring it into view.
+      if(window.matchMedia('(max-width:1040px)').matches) $('#srcpanel').scrollIntoView({behavior:'smooth',block:'start'});
+    });
     // changed: keyboard parity with the click handler above
     el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();el.click()}});
   });
@@ -871,7 +911,7 @@ function renderLegend(){
        ['approval','Approve','Manager only — preparer sees “needs sign-off”'],
        ['verified','Reopen · View history','Preparer + manager'],
        ['locked','—','No one (statutory / filed)']].map(([s,acts,who])=>`
-      <div class="frow state ${s}" style="cursor:default;grid-template-columns:180px 1fr 1fr">
+      <div class="frow state ${s} legend-row">
         <div>${stateTag(s)}</div><div class="mono" style="font-size:12.5px">${acts}</div><div class="muted" style="font-size:12.5px">${who}</div>
       </div>`).join('')}
   </div>`;

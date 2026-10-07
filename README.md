@@ -3,7 +3,7 @@
 
 <!-- portfolio-showcase:start -->
 <p align="center">
-  <img src="docs/showcase.svg" alt="Ledger · AI Tax Workbench synthetic product showcase" width="100%">
+  <img src="docs/screenshots/dashboard.png" alt="Ledger dashboard: a work queue ranked by what to work on now" width="100%">
 </p>
 <p align="center"><sub><strong>Portfolio preview:</strong> all names, records, metrics, and scenarios shown above are synthetic. No real user or customer data is included.</sub></p>
 <!-- portfolio-showcase:end -->
@@ -21,6 +21,20 @@ A clickable frontend prototype for the AI Engineer case study. Covers three chal
 **Run it:** open `index.html` in any browser. No build, no server, no dependencies.
 
 **Important:** all taxpayer data is synthetic. This interface is a product-design prototype, not tax preparation software or tax advice.
+
+
+<table>
+<tr>
+<td width="50%"><img src="docs/screenshots/traceability.png" alt="Source traceability drill-down"><br><sub><b>01 · Traceability</b>: click a line to see value → source document → highlighted box → calculation</sub></td>
+<td width="50%"><img src="docs/screenshots/manager-queue.png" alt="Manager view of the queue"><br><sub><b>07 · Role-aware queue</b>: as Marcus (manager), returns waiting on his sign-off jump to the top</sub></td>
+</tr>
+<tr>
+<td><img src="docs/screenshots/returns.png" alt="All returns with search and filters"><br><sub><b>Holds at scale</b>: ~208 returns with live search, status filters and pagination</sub></td>
+<td><img src="docs/screenshots/interaction-system.png" alt="Interaction system reference"><br><sub><b>08 · Interaction system</b>: five field states, defined once, mapped to actions and roles</sub></td>
+</tr>
+</table>
+
+<p align="center"><img src="docs/screenshots/mobile.png" alt="Traceability on a phone" width="260"><br><sub>Responsive down to phone width: tapping a line scrolls its trace into view.</sub></p>
 
 ---
 
